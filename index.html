@@ -7,6 +7,18 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0"></script>
+<!-- EmailJS SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>
+  // ============================================================
+  //  EMAILJS CONFIG — replace with your own
+  //  Sign up free at emailjs.com → get your Public Key,
+  //  Service ID, and Template ID (steps below)
+  // ============================================================
+  emailjs.init('YOUR_EMAILJS_PUBLIC_KEY');
+  const EMAILJS_SERVICE_ID  = 'YOUR_SERVICE_ID';
+  const EMAILJS_TEMPLATE_ID = 'YOUR_TEMPLATE_ID';
+</script>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   :root{--radius:6px}
@@ -176,6 +188,11 @@
         <label>Contact Number</label>
         <input type="tel" id="f-contact" placeholder="09xx-xxx-xxxx" autocomplete="tel">
       </div>
+      <div class="form-group">
+        <label>Email Address <span class="req">*</span></label>
+        <input type="email" id="f-email" placeholder="youremail@gmail.com" autocomplete="email">
+        <span class="field-error" id="err-email">A valid email address is required.</span>
+      </div>
       <div class="form-group full">
         <label>Home Address <span class="req">*</span></label>
         <input type="text" id="f-address" placeholder="Street, Barangay, City" autocomplete="street-address">
@@ -197,8 +214,10 @@
       </div>
       <div class="form-group full">
         <label>Life Group</label>
-        <input type="text" id="f-lifegroup" placeholder="e.g. LG — Bro. Marco Santos (leave blank if not yet assigned)">
-        <div class="ministry-hint">Leave blank if you're not yet part of a life group — we'll mark it as N/A.</div>
+        <select id="f-lifegroup">
+          <option value="">Loading life groups…</option>
+        </select>
+        <div class="ministry-hint">Select "Not yet" if you're not currently in a life group.</div>
       </div>
       <div class="form-group full">
         <label>Additional Notes or Requests</label>
@@ -230,31 +249,55 @@
 //  Find them in: Supabase Dashboard → Project Settings → API
 // ============================================================
 const SUPABASE_URL = 'https://fxagsqgyiixjhkrvyffk.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4YWdzcWd5aWl4amhrcnZ5ZmZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTgzNTksImV4cCI6MjA5NzczNDM1OX0.k2I-_vZ1RDABkxI7RjJUMfv9gkYYSfL7KtaLCK7Ca7g';
+const SUPABASE_ANON_KEY = 'sb_publishable_9YeQM4867XJyCn_xPcxT6A_AQf85Ftw';
+
+console.log("URL:", SUPABASE_URL);
+console.log("KEY:", SUPABASE_ANON_KEY);
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// ── Load Ministry checkboxes from the database ───────────────
+// ── Load Ministry checkboxes AND Life Group dropdown from the database ──
 async function loadDropdowns(){
-  const ministryGroup = document.getElementById('f-ministry-group');
+  const ministryGroup   = document.getElementById('f-ministry-group');
+  const lifegroupSelect = document.getElementById('f-lifegroup');
 
-  const { data: ministries, error: minErr } = await sb
-    .from('ministries')
-    .select('id, name')
-    .order('name');
+  // Fetch both in parallel
+  const [
+    { data: ministries, error: minErr },
+    { data: lifegroups, error: lgErr  }
+  ] = await Promise.all([
+    sb.from('ministries').select('id, name').order('name'),
+    sb.from('life_groups').select('id, leader_name').order('leader_name'),
+  ]);
 
+  // ── Ministries (checkboxes) ───────────────────────────────
   if(minErr){
     console.error(minErr);
     ministryGroup.innerHTML = '<div style="padding:8px 4px;color:#c0392b;font-size:13px">Could not load ministries — check connection</div>';
-    return;
+  } else {
+    ministryGroup.innerHTML = ministries.map(m => `
+      <div class="ministry-option" onclick="document.getElementById('min-${m.id}').click();event.stopPropagation()">
+        <input type="checkbox" id="min-${m.id}" value="${m.id}" class="ministry-checkbox" onclick="event.stopPropagation()">
+        <span class="min-label">${m.name}</span>
+      </div>
+    `).join('');
   }
 
-  ministryGroup.innerHTML = ministries.map(m => `
-    <div class="ministry-option" onclick="document.getElementById('min-${m.id}').click();event.stopPropagation()">
-      <input type="checkbox" id="min-${m.id}" value="${m.id}" class="ministry-checkbox" onclick="event.stopPropagation()">
-      <span class="min-label">${m.name}</span>
-    </div>
-  `).join('');
+  // ── Life Groups (dropdown) ────────────────────────────────
+  if(lgErr){
+    console.error(lgErr);
+    lifegroupSelect.innerHTML = '<option value="">Could not load — check connection</option>';
+  } else {
+    lifegroupSelect.innerHTML =
+      '<option value="">— Select a Life Group —</option>' +
+      '<option value="Not yet / Not in a Life Group">Not yet / Not in a Life Group</option>' +
+      (lifegroups.length
+        ? lifegroups.map(lg =>
+            `<option value="LG — ${lg.leader_name}">LG — ${lg.leader_name}</option>`
+          ).join('')
+        : '<option value="" disabled>No life groups added yet</option>'
+      );
+  }
 }
 loadDropdowns();
 
@@ -268,6 +311,7 @@ function validate(){
     ['f-birthday','err-bday',v=>v.length>0],
     ['f-gender','err-gender',v=>v.length>0],
     ['f-address','err-addr', v=>v.trim().length>0],
+    ['f-email', 'err-email', v=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim())],
   ];
   checks.forEach(([fid,eid,fn])=>{
     const el=document.getElementById(fid);
@@ -290,15 +334,19 @@ async function submitForm(){
   submitBtn.disabled = true;
   submitBtn.textContent = 'Submitting…';
 
-  const lifegroupValue = document.getElementById('f-lifegroup').value.trim() || 'N/A';
+  const lifegroupValue = document.getElementById('f-lifegroup').value || 'Not yet / Not in a Life Group';
+  const emailValue = document.getElementById('f-email').value.trim();
+  const firstNameValue = document.getElementById('f-fname').value.trim();
+  const lastNameValue = document.getElementById('f-lname').value.trim();
 
   const payload = {
-    first_name:  document.getElementById('f-fname').value.trim(),
-    last_name:   document.getElementById('f-lname').value.trim(),
+    first_name:  firstNameValue,
+    last_name:   lastNameValue,
     age:         parseInt(document.getElementById('f-age').value) || null,
     birthday:    document.getElementById('f-birthday').value || null,
     gender:      document.getElementById('f-gender').value || null,
     contact:     document.getElementById('f-contact').value.trim() || null,
+    email:       emailValue,
     address:     document.getElementById('f-address').value.trim(),
     life_group:  lifegroupValue,
     notes:       document.getElementById('f-notes').value.trim() || null,
@@ -308,7 +356,11 @@ async function submitForm(){
   const { data: inserted, error } = await sb.from('members').insert([payload]).select('id');
 
   if(error){
-    console.error(error);
+    console.error(
+      error.message,
+      error.details,
+      error.hint
+    );
     submitBtn.disabled = false;
     submitBtn.textContent = 'Submit Registration';
     alert('Something went wrong submitting your registration. Please check your connection and try again.');
@@ -329,6 +381,20 @@ async function submitForm(){
   submitBtn.disabled = false;
   submitBtn.textContent = 'Submit Registration';
 
+  // 3. Send welcome email via EmailJS
+  try {
+    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+      to_email:   emailValue,
+      to_name:    firstNameValue,
+      full_name:  `${firstNameValue} ${lastNameValue}`,
+      life_group: lifegroupValue,
+    });
+    console.log('Welcome email sent successfully');
+  } catch(emailErr) {
+    // Email failure doesn't block registration — just log it
+    console.error('Email send failed:', emailErr);
+  }
+
   document.getElementById('step1').classList.add('done');
   document.getElementById('step2').classList.add('done');
   document.getElementById('step3').classList.add('active');
@@ -338,9 +404,9 @@ async function submitForm(){
 }
 
 function clearForm(){
-  ['f-fname','f-lname','f-age','f-birthday','f-contact','f-address','f-notes','f-lifegroup']
+  ['f-fname','f-lname','f-age','f-birthday','f-contact','f-email','f-address','f-notes']
     .forEach(id=>{document.getElementById(id).value=''; document.getElementById(id).classList.remove('error');});
-  document.getElementById('f-gender').selectedIndex=0;
+  ['f-gender','f-lifegroup'].forEach(id=>{ document.getElementById(id).selectedIndex=0; });
   document.querySelectorAll('.ministry-checkbox').forEach(cb=>cb.checked=false);
   document.querySelectorAll('.field-error').forEach(e=>e.classList.remove('show'));
 }
