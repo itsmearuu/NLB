@@ -147,7 +147,14 @@
 
   <div class="privacy-note">
     <span class="privacy-icon">🔒</span>
-    <span>Your information is stored securely in the NewLife database and is only accessible to authorized church administrators.</span>
+    <span><p>Your information is stored securely in the NewLife database and is only accessible to authorized church administrators.</p>
+          
+          <br><p>Welcome to New Life Baguio where everything is all about Jesus.</p>
+
+          <br><p>By filling out and submitting this form, you consent to the collection, use, and processing of your personal data by New Life Baguio (NL Baguio) in accordance with the Data Privacy Act of 2012 for communication and ministry-related purposes.</p>
+
+          <br><p>Your information will be kept confidential and not shared without your consent, unless required by law. For more details, please review our Privacy Notice here: <a href="https://tinyurl.com/nlbPrivacyNotice" target="_blank">https://tinyurl.com/nlbPrivacyNotice</a></p>
+    </span>
   </div>
 
   <!-- Personal Info Card -->
@@ -218,9 +225,17 @@
         <div class="ministry-hint">Leave blank if you're not yet in a life group — we'll mark it as N/A.</div>
       </div>
       <div class="form-group full">
-        <label>Additional Notes or Requests</label>
+        <label style="font-weight: bold; font-size: 14px; color: black;">Additional Notes or Requests</label>
         <textarea id="f-notes" placeholder="Any prayer requests, ministry interests, or notes for the admin..."></textarea>
       </div>
+    </div>
+
+    <div class="form-group full" style="margin-top:.5rem">
+      <label style="display:flex;align-items:flex-start;gap:10px;text-transform:none;font-size:13px;font-weight:400;color:#555;cursor:pointer">
+        <input type="checkbox" id="f-consent" style="margin-top:3px;width:15px;height:15px;flex-shrink:0">
+        I agree that NewLife Church may store and use my information for church membership purposes.
+      </label>
+      <span class="field-error" id="err-consent">Please agree to continue.</span>
     </div>
 
     <div class="form-actions">
@@ -289,6 +304,7 @@ function validate(){
     ['f-gender','err-gender',v=>v.length>0],
     ['f-address','err-addr', v=>v.trim().length>0],
     ['f-email', 'err-email', v=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim())],
+    ['f-consent','err-consent', ()=>document.getElementById('f-consent').checked],
   ];
   checks.forEach(([fid,eid,fn])=>{
     const el=document.getElementById(fid);

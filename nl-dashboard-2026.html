@@ -944,6 +944,14 @@ async function declineRequest(id){
 
 document.getElementById('modal-bg').addEventListener('click',function(e){if(e.target===this)closeModal();});
 document.getElementById('del-modal-bg').addEventListener('click',function(e){if(e.target===this)closeDel();});
+
+let inactivityTimer; // Timer for auto-logout after inactivity
+function resetTimer(){
+  clearTimeout(inactivityTimer);
+  inactivityTimer = setTimeout(()=>{ logout(); alert('Session expired. Please log in again.'); }, 5 * 60 * 1000); // 5 minutes
+}
+['click','keypress','scroll','mousemove'].forEach(e => document.addEventListener(e, resetTimer));
+resetTimer();
 </script>
 </body>
 </html>
