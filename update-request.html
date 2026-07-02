@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NewLife Church — Update Your Information</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{--radius:6px}
+  body{font-family:'Inter',system-ui,sans-serif;background:#f7f7f7;color:#0a0a0a;font-size:15px;line-height:1.6;min-height:100vh}
+
+  /* NAV */
+  nav{background:#0a0a0a;position:sticky;top:0;z-index:100}
+  .nav-inner{max-width:720px;margin:0 auto;padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:58px}
+  .nav-logo{font-weight:600;font-size:16px;letter-spacing:-.3px;color:#fff}
+  .nav-logo span{font-weight:300;color:#888}
+  .nav-tagline{font-size:12px;color:#666;letter-spacing:.3px}
+
+  /* HERO STRIP */
+  .hero{background:#0a0a0a;color:#fff;text-align:center;padding:3.5rem 2rem 3rem}
+  .hero h1{font-size:32px;font-weight:600;letter-spacing:-.6px;margin-bottom:.5rem}
+  .hero p{font-size:14px;color:#888;max-width:420px;margin:0 auto}
+
+  /* MAIN */
+  main{max-width:720px;margin:0 auto;padding:2.5rem 2rem 4rem}
+
+  /* CARD */
+  .card{background:#fff;border:1px solid #e8e8e8;border-radius:12px;padding:2rem;margin-bottom:1.25rem}
+  .card-title{font-size:14px;font-weight:600;letter-spacing:.2px;margin-bottom:1.5rem;display:flex;align-items:center;gap:8px;text-transform:uppercase;color:#444}
+  .card-title::after{content:'';flex:1;height:1px;background:#f0f0f0}
+
+  /* FORM */
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.1rem}
+  .form-group{display:flex;flex-direction:column;gap:5px}
+  .form-group.full{grid-column:1/-1}
+  label{font-size:11px;font-weight:500;letter-spacing:.5px;text-transform:uppercase;color:#666}
+  input,select,textarea{
+    border:1px solid #d8d8d8;border-radius:var(--radius);padding:10px 12px;
+    font-size:14px;font-family:inherit;background:#fff;color:#000;
+    transition:border-color .15s;outline:none;width:100%
+  }
+  input:focus,select:focus,textarea:focus{border-color:#000;box-shadow:0 0 0 3px rgba(0,0,0,.04)}
+  input::placeholder,textarea::placeholder{color:#ccc}
+  textarea{resize:vertical;min-height:80px}
+
+  /* MINISTRY CHECKBOX GROUP */
+  .ministry-group{border:1px solid #d8d8d8;border-radius:var(--radius);padding:8px 10px;display:flex;flex-direction:column;gap:0;max-height:240px;overflow-y:auto}
+  .ministry-option{display:flex;flex-direction:row;align-items:center;gap:10px;padding:8px 6px;border-radius:4px;cursor:pointer;transition:background .12s;user-select:none;width:100%}
+  .ministry-option:hover{background:#f5f5f5}
+  .ministry-option input[type=checkbox]{width:15px;height:15px;min-width:15px;cursor:pointer;accent-color:#0a0a0a;margin:0;flex-shrink:0}
+  .ministry-option .min-label{font-size:13px;font-weight:400;text-transform:none;letter-spacing:0;color:#222;cursor:pointer;margin:0;line-height:1.4}
+  .ministry-hint{font-size:11px;color:#aaa;margin-top:6px}
+
+  /* PRIVACY NOTE */
+  .privacy-note{background:#f9f9f9;border:1px solid #ebebeb;border-radius:8px;padding:12px 14px;font-size:12px;color:#777;margin-bottom:1.25rem;display:flex;gap:10px;align-items:flex-start}
+  .privacy-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+
+  /* ACTIONS */
+  .form-actions{display:flex;gap:.75rem;align-items:center;margin-top:.5rem}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:11px 22px;border-radius:var(--radius);font-size:13px;font-weight:500;cursor:pointer;border:1px solid;transition:all .15s;letter-spacing:.1px;font-family:inherit}
+  .btn-primary{background:#0a0a0a;color:#fff;border-color:#0a0a0a}
+  .btn-primary:hover{background:#2a2a2a}
+  .btn-primary:active{transform:scale(.98)}
+  .btn-primary:disabled{opacity:.5;cursor:not-allowed}
+  .btn-ghost{background:transparent;color:#666;border-color:#d8d8d8}
+  .btn-ghost:hover{background:#f5f5f5;color:#000}
+
+  /* SUCCESS */
+  .success-banner{display:none;background:#f0faf4;border:1px solid #b7e4cc;border-radius:10px;padding:1.5rem;margin-top:1.5rem;text-align:center}
+  .success-banner.show{display:block}
+  .success-banner .s-icon{font-size:32px;margin-bottom:.5rem}
+  .success-banner h3{font-size:17px;font-weight:600;color:#1a6b3a;margin-bottom:.25rem}
+  .success-banner p{font-size:13px;color:#3a8a5a}
+
+  /* ERROR */
+  .field-error{font-size:11px;color:#c0392b;margin-top:3px;display:none}
+  .field-error.show{display:block}
+  input.error{border-color:#c0392b}
+  .lookup-error{display:none;background:#fdf2f1;border:1px solid #f1c6c1;border-radius:8px;padding:12px 14px;font-size:13px;color:#a33;margin-top:1rem}
+  .lookup-error.show{display:block}
+
+  /* FOUND BANNER */
+  .found-banner{background:#f0faf4;border:1px solid #b7e4cc;border-radius:8px;padding:12px 14px;font-size:13px;color:#1a6b3a;margin-bottom:1.5rem;display:flex;align-items:center;gap:10px}
+
+  /* FOOTER */
+  footer{border-top:1px solid #e8e8e8;text-align:center;padding:1.5rem;font-size:12px;color:#aaa}
+
+  .hidden{display:none !important}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <div class="nav-logo">NewLife<span> Church</span></div>
+    <div class="nav-tagline">MEMBER PORTAL</div>
+  </div>
+</nav>
+
+<div class="hero">
+  <h1>Update Your Information</h1>
+  <p>Look yourself up below, then let us know what's changed. A team member will review and apply it.</p>
+</div>
+
+<main>
+
+  <!-- STEP 1: LOOKUP -->
+  <div class="card" id="lookup-card">
+    <div class="card-title">Find Your Record</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Email<span style="color:#c0392b">*</span></label>
+        <input type="email" id="l-email" placeholder="you@example.com">
+      </div>
+      <div class="form-group">
+        <label>Birthday<span style="color:#c0392b">*</span></label>
+        <input type="date" id="l-birthday">
+      </div>
+    </div>
+    <div class="form-actions" style="margin-top:1.25rem">
+      <button class="btn btn-primary" id="lookup-btn" onclick="lookupMember()">Find My Info</button>
+    </div>
+    <div class="lookup-error" id="lookup-error">
+      We couldn't find a member with that email and birthday. Double-check both fields, or if you haven't registered yet, use the <a href="index.html" style="color:#a33;font-weight:600">Member Registration</a> form instead.
+    </div>
+  </div>
+
+  <!-- STEP 2: UPDATE FORM (hidden until lookup succeeds) -->
+  <div id="update-section" class="hidden">
+    <div class="found-banner" id="found-banner"></div>
+
+    <div class="card">
+      <div class="card-title">Update Your Details</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Contact Number</label>
+          <input type="text" id="u-contact" placeholder="09XX XXX XXXX">
+        </div>
+        <div class="form-group">
+          <label>Address</label>
+          <input type="text" id="u-address" placeholder="Street, Barangay, City">
+        </div>
+        <div class="form-group full ministry-wrap">
+          <label>Ministry <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#aaa">(select all that apply)</span></label>
+          <div class="ministry-group" id="u-ministry-group">
+            <div style="padding:8px 4px;color:#bbb;font-size:13px">Loading ministries…</div>
+          </div>
+          <div class="ministry-hint">Leave all unchecked if you're not currently part of a ministry.</div>
+        </div>
+        <div class="form-group full">
+          <label>Life Group</label>
+          <input type="text" id="u-lifegroup" placeholder="e.g. LG — Bro. John Lesther Miranda">
+        </div>
+        <div class="form-group full">
+          <label>Anything else you'd like us to update?</label>
+          <textarea id="u-notes" placeholder="e.g. corrected spelling of my last name, new emergency contact, etc."></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="privacy-note">
+      <span class="privacy-icon">🔒</span>
+      <span>This doesn't change your record right away — it's sent to our team as a request, and they'll review and apply it.</span>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn btn-primary" id="submit-btn" onclick="submitUpdateRequest()">Submit Update Request</button>
+      <button class="btn btn-ghost" onclick="resetForm()">Start Over</button>
+    </div>
+
+    <div class="success-banner" id="success-banner">
+      <div class="s-icon">✅</div>
+      <h3>Request Submitted!</h3>
+      <p>Thanks — our team will review your changes and update your record soon.</p>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  &copy; 2026 NewLife Church &nbsp;·&nbsp; All rights reserved
+</footer>
+
+<script>
+// ============================================================
+//  SUPABASE CONFIG — replace with your own project's values
+// ============================================================
+const SUPABASE_URL = 'https://fxagsqgyiixjhkrvyffk.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_9YeQM4867XJyCn_xPcxT6A_AQf85Ftw';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let foundMember = null;   // holds the looked-up member_profiles row
+let ministries = [];      // [{id, name}]
+let currentMinistryIds = new Set();
+
+// ── Lookup ─────────────────────────────────────────────────
+async function lookupMember(){
+  const emailInput = document.getElementById('l-email');
+  const birthdayInput = document.getElementById('l-birthday');
+  const btn = document.getElementById('lookup-btn');
+  const err = document.getElementById('lookup-error');
+
+  err.classList.remove('show');
+  emailInput.classList.remove('error');
+  birthdayInput.classList.remove('error');
+
+  const email = emailInput.value.trim();
+  const birthday = birthdayInput.value;
+
+  if(!email || !birthday){
+    if(!email) emailInput.classList.add('error');
+    if(!birthday) birthdayInput.classList.add('error');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Searching…';
+
+  const { data, error } = await sb
+    .from('members')
+    .select('*')
+    .ilike('email', email)
+    .eq('birthday', birthday)
+    .maybeSingle();
+
+  btn.disabled = false;
+  btn.textContent = 'Find My Info';
+
+  if(error || !data){
+    err.classList.add('show');
+    return;
+  }
+
+  foundMember = data;
+  document.getElementById('found-banner').textContent =
+    `Welcome back, ${data.first_name}! Update whatever's changed below.`;
+
+  // Pre-fill known values
+  document.getElementById('u-contact').value = data.contact || '';
+  document.getElementById('u-address').value = data.address || '';
+  document.getElementById('u-lifegroup').value = (data.life_group && data.life_group !== 'N/A') ? data.life_group : '';
+
+  await loadMinistries(data);
+
+  document.getElementById('lookup-card').classList.add('hidden');
+  document.getElementById('update-section').classList.remove('hidden');
+}
+
+// ── Load ministry checkboxes, pre-checking current ones ─────
+async function loadMinistries(memberRow){
+  const group = document.getElementById('u-ministry-group');
+
+  const { data: allMinistries, error: minErr } = await sb
+    .from('ministries')
+    .select('id, name')
+    .order('name');
+
+  if(minErr){
+    group.innerHTML = '<div style="padding:8px 4px;color:#c0392b;font-size:13px">Could not load ministries — check connection</div>';
+    return;
+  }
+  ministries = allMinistries;
+
+  const { data: links } = await sb
+    .from('member_ministries')
+    .select('ministry_id')
+    .eq('member_id', memberRow.id);
+
+  currentMinistryIds = new Set((links || []).map(l => l.ministry_id));
+
+  group.innerHTML = ministries.map(m => `
+    <div class="ministry-option" onclick="document.getElementById('umin-${m.id}').click();event.stopPropagation()">
+      <input type="checkbox" id="umin-${m.id}" value="${m.id}" class="u-ministry-checkbox"
+        ${currentMinistryIds.has(m.id) ? 'checked' : ''} onclick="event.stopPropagation()">
+      <span class="min-label">${m.name}</span>
+    </div>
+  `).join('');
+}
+
+// ── Submit the update request ───────────────────────────────
+async function submitUpdateRequest(){
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Submitting…';
+
+  const newContact = document.getElementById('u-contact').value.trim();
+  const newAddress = document.getElementById('u-address').value.trim();
+  const newLifegroup = document.getElementById('u-lifegroup').value.trim() || 'N/A';
+  const newNotes = document.getElementById('u-notes').value.trim();
+
+  const selectedMinistryNames = Array.from(document.querySelectorAll('.u-ministry-checkbox:checked'))
+    .map(cb => ministries.find(m => m.id === parseInt(cb.value))?.name)
+    .filter(Boolean);
+
+  // Build a human-readable summary of what changed, so an admin can
+  // scan it quickly and apply it manually in the Members tab.
+  const changeLines = [];
+  if(newContact !== (foundMember.contact || '')) changeLines.push(`Contact: "${foundMember.contact || '—'}" → "${newContact || '—'}"`);
+  if(newAddress !== (foundMember.address || '')) changeLines.push(`Address: "${foundMember.address || '—'}" → "${newAddress || '—'}"`);
+  if(newLifegroup !== (foundMember.life_group || 'N/A')) changeLines.push(`Life Group: "${foundMember.life_group || 'N/A'}" → "${newLifegroup}"`);
+
+  const currentMinistryNames = ministries.filter(m => currentMinistryIds.has(m.id)).map(m => m.name).sort();
+  const newMinistryNamesSorted = [...selectedMinistryNames].sort();
+  if(JSON.stringify(currentMinistryNames) !== JSON.stringify(newMinistryNamesSorted)){
+    changeLines.push(`Ministry: "${currentMinistryNames.join(', ') || 'None'}" → "${newMinistryNamesSorted.join(', ') || 'None'}"`);
+  }
+  if(newNotes) changeLines.push(`Additional note: ${newNotes}`);
+
+  if(!changeLines.length){
+    btn.disabled = false;
+    btn.textContent = 'Submit Update Request';
+    alert("Nothing looks different yet — update a field above before submitting.");
+    return;
+  }
+
+  const { error } = await sb.from('update_requests').insert([{
+    member_id: foundMember.id,
+    request_type: 'Profile Update',
+    details: changeLines.join('\n'),
+    status: 'pending',
+  }]);
+
+  btn.disabled = false;
+  btn.textContent = 'Submit Update Request';
+
+  if(error){
+    console.error(error);
+    alert('Something went wrong submitting your request. Please check your connection and try again.');
+    return;
+  }
+
+  document.getElementById('success-banner').classList.add('show');
+  document.querySelectorAll('.card, .privacy-note, .form-actions').forEach(el => el.classList.add('hidden'));
+}
+
+function resetForm(){
+  foundMember = null;
+  document.getElementById('l-email').value = '';
+  document.getElementById('l-birthday').value = '';
+  document.getElementById('lookup-error').classList.remove('show');
+  document.getElementById('update-section').classList.add('hidden');
+  document.getElementById('lookup-card').classList.remove('hidden');
+  document.querySelectorAll('.card, .privacy-note, .form-actions').forEach(el => el.classList.remove('hidden'));
+  document.getElementById('success-banner').classList.remove('show');
+}
+</script>
+
+</body>
+</html>
