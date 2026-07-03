@@ -1129,7 +1129,7 @@ document.getElementById('del-modal-bg').addEventListener('click',function(e){if(
 let inactivityTimer; // Timer for auto-logout after inactivity
 function resetTimer(){
   clearTimeout(inactivityTimer);
-  inactivityTimer = setTimeout(()=>{ logout(); alert('Session expired. Please log in again.'); }, 5 * 60 * 1000); // 5 minutes
+  inactivityTimer = setTimeout(()=>{ logout(); alert('Session expired. Please log in again.'); }, 10 * 60 * 1000); // 10 minutes
 }
 ['click','keypress','scroll','mousemove'].forEach(e => document.addEventListener(e, resetTimer));
 resetTimer();
